@@ -20,6 +20,12 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
+## Deploy on Render
+
+This repository includes `render.yaml` for a Render web service. Create a new Render service from the repository (or use **Blueprints**); Render will install `requirements.txt`, bind Uvicorn to Render's `$PORT`, and use `/health` for health checks. Keep one worker because OCR is CPU/memory intensive and the service is intentionally stateless.
+
+The included `Dockerfile` is an alternative for Render's Docker runtime. It uses Python 3.12 and starts the same production server. No database, disk, or secret configuration is required.
+
 The `liteparse` package installs `lit`. Confirm it is available:
 
 ```powershell
