@@ -41,4 +41,15 @@ curl.exe -X POST http://127.0.0.1:8000/extract -F "file=@C:\docs\report.pdf"
 
 `POST /extract` returns the selected `parser`, `needs_ocr`, extracted `text`, and for PDFs LiteParse's per-page complexity metadata. `GET /health` shows whether `lit` is available.
 
+## PDF utility tools
+
+The API also includes stateless iLovePDF-style operations. They keep uploads in memory and return the generated file directly:
+
+- `POST /tools/merge` — multiple PDF files
+- `POST /tools/split` — one PDF plus `pages=1,3-5`
+- `POST /tools/image-to-pdf` — PNG/JPEG/TIFF and other supported images
+- `POST /tools/pdf-to-text` — native text-layer extraction as `.txt`
+
+All endpoints are also available interactively in `/docs`.
+
 LiteParse runs locally and includes Tesseract OCR by default. For other languages or a remote OCR backend, configure LiteParse/Tesseract in the runtime environment; this minimal API currently uses LiteParse's default `eng` language.
