@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import shutil
+import subprocess
 import uuid
 from pathlib import Path
 from typing import Literal
@@ -56,18 +57,21 @@ async def _run_liteparse(*args: str) -> tuple[int, str, str]:
             detail="LiteParse is not installed or `lit` is not on PATH. Run `pip install -r requirements.txt`.",
         )
     try:
-        process = await asyncio.create_subprocess_exec(
-            binary, *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        # subprocess.run is executed off the event loop. This is important on
+        # Windows where Uvicorn may select a SelectorEventLoop that does not
+        # implement asyncio.create_subprocess_exec.
+        completed = await asyncio.to_thread(
+            subprocess.run,
+            [binary, *args],
+            capture_output=True,
+            timeout=120,
+            check=False,
         )
+    except subprocess.TimeoutExpired as exc:
+        raise HTTPException(status_code=504, detail="LiteParse timed out after 120 seconds.")
     except OSError as exc:
         raise HTTPException(status_code=503, detail=f"Could not start LiteParse: {exc}") from exc
-    try:
-        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=120)
-    except TimeoutError:
-        process.kill()
-        await process.wait()
-        raise HTTPException(status_code=504, detail="LiteParse timed out after 120 seconds.")
-    return process.returncode, stdout.decode(errors="replace"), stderr.decode(errors="replace")
+    return completed.returncode, completed.stdout.decode(errors="replace"), completed.stderr.decode(errors="replace")
 
 
 async def _complexity(path: Path) -> list[dict]:
